@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf8"?>
 <xtcommerceplugin>
     <title>idealo Direktkauf</title>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <code>fc_idealodk</code>
     <url>http://www.idealo.de</url>
     <description>Module to import orders from idealo direktkauf into yout XTC-Shop.</description>
@@ -11,8 +11,8 @@
     <type>marketing</type>
     <db_install>
     <![CDATA[
-        $db->Execute("INSERT INTO xt_orders_source (source_name) VALUES ('Idealo Direktkauf')");
-        $db->Execute("CREATE TABLE IF NOT EXISTS xt_fcidealo_status (
+        $db->Execute("INSERT INTO ".TABLE_ORDERS_SOURCE." (source_name) VALUES ('Idealo Direktkauf')");
+        $db->Execute("CREATE TABLE IF NOT EXISTS ".DB_PREFIX."_fcidealo_status (
             fcidealo_status_id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             orders_id int(11) NOT NULL,
             date_imported datetime NULL,
@@ -20,26 +20,36 @@
             date_sent_trackcode datetime NULL,
             date_sent_cancel datetime NULL
             ) ENGINE='InnoDB' COLLATE 'utf8_general_ci'");
+        
+        $db->Execute("INSERT INTO ".TABLE_CRON." (cron_note, active_status, cron_value, cron_type, hour, minute, cron_action, cron_parameter, last_run_date, next_run_date) VALUES
+            ('Idealo Bestellimport', 1, 15, 'i', 0, 0, 'idealodk_order_sync', '', NULL, (NOW() + INTERVAL 15 MINUTE)),
+            ('Idealo Bestellstatus', 1, 15, 'i', 0, 0, 'idealodk_status_sync', '', NULL, (NOW() + INTERVAL 15 MINUTE))");
     ]]>
     </db_install>
-
-	<plugin_code>
-		<code>
-			<hook>admin_dropdown.php:dropdown</hook>
-			<phpcode><![CDATA[
+    <db_uninstall>
+    <![CDATA[
+        $db->Execute("DELETE FROM ".TABLE_ORDERS_SOURCE." WHERE source_name = 'Idealo Direktkauf'");
+        $db->Execute("DELETE FROM ".TABLE_CRON." WHERE cron_action = 'idealodk_order_sync' OR cron_action = 'idealodk_status_sync'");
+        $db->Execute("DROP TABLE IF EXISTS ".DB_PREFIX."_fcidealo_status");
+    ]]>
+    </db_uninstall>
+    <plugin_code>
+        <code>
+            <hook>admin_dropdown.php:dropdown</hook>
+            <phpcode><![CDATA[
 			require_once _SRV_WEBROOT.'plugins/fc_idealodk/hooks/admin_dropdown_php_dropdown.php';
 			]]></phpcode>
-			<order>1</order>
-			<active>1</active>
-		</code>
-		<code>
-			<hook>cron_action:idealodk_order_sync</hook>
-			<phpcode><![CDATA[
+            <order>1</order>
+            <active>1</active>
+        </code>
+        <code>
+            <hook>cron_action:idealodk_order_sync</hook>
+            <phpcode><![CDATA[
 			require_once _SRV_WEBROOT.'plugins/fc_idealodk/cron/fcidealodk_orders_batch.php';
 			]]></phpcode>
-			<order>2</order>
-			<active>1</active>
-		</code>
+            <order>2</order>
+            <active>1</active>
+        </code>
         <code>
             <hook>cron_action:idealodk_status_sync</hook>
             <phpcode><![CDATA[
@@ -48,21 +58,21 @@
             <order>3</order>
             <active>1</active>
         </code>
-	</plugin_code>
+    </plugin_code>
 
     <configuration>
         <config>
-			<key>FC_IDEALODK_MODE</key>
-			<value>test</value>
-			<type>dropdown</type>
-			<url>fc_idealodk_mode</url>
-			<de>
-				<title>Modus</title>
-			</de>
-			<en>
-				<title>mode</title>
-			</en>
-		</config>
+            <key>FC_IDEALODK_MODE</key>
+            <value>test</value>
+            <type>dropdown</type>
+            <url>fc_idealodk_mode</url>
+            <de>
+                <title>Modus</title>
+            </de>
+            <en>
+                <title>mode</title>
+            </en>
+        </config>
         <config>
             <key>FC_IDEALODK_APIKEY</key>
             <value></value>
@@ -97,7 +107,7 @@
             <key>FC_IDEALODK_PAYMENTCODE_SOFORT</key>
             <value>xt_sofortueberweisung</value>
             <de>
-                <title><![CDATA[XT Zahlungsart-Code f??r Sofort&uuml;berweisung]]></title>
+                <title><![CDATA[XT Zahlungsart-Code f&uuml;r Sofort&uuml;berweisung]]></title>
             </de>
             <en>
                 <title><![CDATA[XT Payment-Code for Sofort&uuml;berweisung]]></title>
@@ -134,28 +144,28 @@
             </en>
         </config>
         <config>
-			<key>FC_IDEALODK_STORNO_REASON</key>
-			<value>revocation</value>
-			<type>dropdown</type>
-			<url>fc_idealodk_storno_reason</url>
-			<de>
-				<title><![CDATA[Als Stornierungsgrund &uuml;bermittelter Wert]]></title>
-			</de>
-			<en>
-				<title>Reason for order cancelation</title>
-			</en>
-		</config>
+            <key>FC_IDEALODK_STORNO_REASON</key>
+            <value>revocation</value>
+            <type>dropdown</type>
+            <url>fc_idealodk_storno_reason</url>
+            <de>
+                <title><![CDATA[Als Stornierungsgrund &uuml;bermittelter Wert]]></title>
+            </de>
+            <en>
+                <title>Reason for order cancelation</title>
+            </en>
+        </config>
         <config>
-			<key>FC_IDEALODK_DEBUG_OUTPUT</key>
-			<value>true</value>
-			<type>dropdown</type>
-			<url>fc_idealodk_debug_output</url>
-			<de>
-				<title>Debug Output</title>
-			</de>
-			<en>
-				<title>Debug Output</title>
-			</en>
-		</config>
+            <key>FC_IDEALODK_DEBUG_OUTPUT</key>
+            <value>true</value>
+            <type>dropdown</type>
+            <url>fc_idealodk_debug_output</url>
+            <de>
+                <title>Debug Output</title>
+            </de>
+            <en>
+                <title>Debug Output</title>
+            </en>
+        </config>
     </configuration>
 </xtcommerceplugin> 
