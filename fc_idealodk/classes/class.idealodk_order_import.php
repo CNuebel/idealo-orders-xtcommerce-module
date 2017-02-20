@@ -94,17 +94,18 @@ class idealodk_order_import
     }
 
     /**
-     * @param $sIdealoOrderNr
-     * @return bool
+     * @param string $sIdealoOrderNr
+     *
+     * @return bool $blExists
      */
     protected function orderExists($sIdealoOrderNr)
     {
         $blExists = false;
         global $db;
         $sQ = "SELECT 
-                xt_orders.orders_id AS orders_id
-               FROM xt_orders
-               WHERE xt_orders.orders_source_external_id = '" . $sIdealoOrderNr . "'";
+                " . DB_PREFIX . "_orders.orders_id AS orders_id
+               FROM " . DB_PREFIX . "_orders
+               WHERE " . DB_PREFIX . "_orders.orders_source_external_id = '" . $sIdealoOrderNr . "'";
         $aOrders = $db->GetArray($sQ);
         if(is_array($aOrders) && count($aOrders) > 0 ) {
             $blExists = true;
@@ -114,9 +115,10 @@ class idealodk_order_import
     }
 
     /**
-     * @param $aOrder
-     * @param $iCustomerId
+     * @param array $aOrder
+     * @param int $iCustomerId
      * @param string $sAdressClass
+     *
      * @return mixed
      */
     protected function addCustomerAdress($aOrder, $iCustomerId, $sAdressClass = 'default')
@@ -150,7 +152,8 @@ class idealodk_order_import
     }
 
     /**
-     * @param $aOrder
+     * @param array $aOrder
+     *
      * @return mixed
      */
     protected function addCustomer($aOrder)
@@ -171,7 +174,7 @@ class idealodk_order_import
     }
 
     /**
-     * @param $iOrderId
+     * @param int $iOrderId
      */
     protected function addFcIdealoStatus($iOrderId)
     {
@@ -181,14 +184,15 @@ class idealodk_order_import
         $aData['orders_id'] = $iOrderId;
         $aData['date_imported'] = date("Y-m-d H:i:s");
         
-        $db->AutoExecute('xt_fcidealo_status',$aData,'INSERT');
+        $db->AutoExecute(DB_PREFIX . '_fcidealo_status',$aData,'INSERT');
     }
 
     /**
-     * @param $aOrder
-     * @param $iCustomerId
-     * @param $iAdressbookShippingId
-     * @param $iAdressbookBillingId
+     * @param array $aOrder
+     * @param int $iCustomerId
+     * @param int $iAdressbookShippingId
+     * @param int $iAdressbookBillingId
+     *
      * @return mixed
      */
     protected function addOrder($aOrder, $iCustomerId, $iAdressbookShippingId, $iAdressbookBillingId)
@@ -282,18 +286,19 @@ class idealodk_order_import
     }
 
     /**
-     * @param $aOrder
-     * @param $iOrderId
+     * @param array $aOrder
+     * @param int $iOrderId
+     *
      * @return bool
      */
     protected function addOrderProducts($aOrder, $iOrderId)
     {
         $oOrder = new order();
         foreach ($aOrder['line_items'] as $aProduct) {
-            $iNetPrice = ($aProduct['item_price'] / 119) * 100;
+            $oProduct = $this->getProduct($aProduct['sku']);
+            $dTaxRate = $this->getTaxRate($oProduct);
+            $iNetPrice = ($aProduct['item_price'] / (100 + $dTaxRate) ) * 100;
             
-            $sModel = $aProduct['sku'];
-            $oProduct = $this->getProduct($sModel);
             if (!$oProduct){
                 return false;
             }
@@ -303,8 +308,8 @@ class idealodk_order_import
             $aData['products_name'] = utf8_decode( $aProduct['title'] );
             $aData['products_shipping_time'] = utf8_decode( $aProduct['delivery_time'] );
             $aData['products_price'] = $iNetPrice;
-            $aData['products_tax'] = '19.0000';
-            $aData['products_tax_class'] = '1';
+            $aData['products_tax'] = $dTaxRate;
+            $aData['products_tax_class'] = $oProduct->data['products_tax_class_id'];
             $aData['products_quantity'] = $aProduct['quantity'];
             $aData['allow_tax'] = '1';
             if ($aProduct['delivery_time']){
@@ -317,7 +322,33 @@ class idealodk_order_import
     }
 
     /**
-     * @param $iOrderId
+     * Load tax rate for given product and shipping zone Germany from database.
+     *
+     * @param object $oProduct
+     *
+     * @return decimal $dRate Tax rate
+     */
+    protected function getTaxRate($oProduct)
+    {
+        global $db;
+
+        $iTaxClassId = $oProduct->data['products_tax_class_id'];
+        $sQ = "SELECT zone_id FROM " . DB_PREFIX . "_countries WHERE countries_iso_code_2 = 'DE'";
+        $iZoneID = $db->GetOne($sQ);
+        $sQRate = "SELECT tax_rate FROM " . DB_PREFIX . "_tax_rates 
+                   WHERE tax_zone_id = '" . $iZoneID . "' 
+                   AND tax_class_id = '" . $iTaxClassId . "'";
+        $dRate = $db->GetOne($sQRate);
+
+        if (!$dRate) {
+            $dRate = 19.00;
+        }
+
+        return $dRate;
+    }
+
+    /**
+     * @param int $iOrderId
      */
     protected function addOrderStatusHistory($iOrderId)
     {
@@ -337,8 +368,8 @@ class idealodk_order_import
     }
 
     /**
-     * @param $aOrder
-     * @param $iOrderId
+     * @param array $aOrder
+     * @param int $iOrderId
      */
     protected function addOrderStats($aOrder, $iOrderId)
     {
@@ -349,12 +380,12 @@ class idealodk_order_import
         $aData['orders_stats_price'] = $aOrder['total_price'];
         $aData['products_count'] = 1;
         
-        $db->AutoExecute('xt_orders_stats',$aData,'INSERT');
+        $db->AutoExecute(DB_PREFIX . '_orders_stats',$aData,'INSERT');
     }
 
     /**
-     * @param $aOrder
-     * @param $iOrderId
+     * @param array $aOrder
+     * @param int $iOrderId
      */
     protected function addOrderTotal($aOrder, $iOrderId)
     {
@@ -378,14 +409,14 @@ class idealodk_order_import
     }
 
     /**
-     * @param $sSku
-     * @return bool|product
+     * @param string $sSku
+     * @return mixed
      */
     protected function getProduct($sSku)
     {
         global $db;
         $oProduct = false;
-        $sQ = "SELECT products_id FROM xt_products WHERE products_model = '" . $sSku . "'";
+        $sQ = "SELECT products_id FROM " . DB_PREFIX . "_products WHERE products_model = '" . $sSku . "'";
         $sId = $db->GetOne($sQ);
         if ($sId && $sId != ""){
             $oProduct = new product($sId);
@@ -403,7 +434,7 @@ class idealodk_order_import
     {
         global $db;
         
-        $sQ = "SELECT source_id FROM xt_orders_source WHERE source_name = 'Idealo Direktkauf'";
+        $sQ = "SELECT source_id FROM " . DB_PREFIX . "_orders_source WHERE source_name = 'Idealo Direktkauf'";
         $sId = $db->GetOne($sQ);
         
         if (!$sId){
@@ -414,13 +445,13 @@ class idealodk_order_import
     }
 
     /**
-     * @param $iOrderId
+     * @param int $iOrderId
      */
     protected function resetImport($iOrderId)
     {
         global $db;
         
-        $sQ1 = "DELETE FROM xt_orders WHERE orders_id = '" . $iOrderId . "'";
+        $sQ1 = "DELETE FROM " . DB_PREFIX . "_orders WHERE orders_id = '" . $iOrderId . "'";
         $db->Execute($sQ1);
         
         $sQ2 = "DELETE FROM " . TABLE_ORDERS_TOTAL . " WHERE orders_id = '" . $iOrderId . "'";
@@ -431,8 +462,8 @@ class idealodk_order_import
     }
 
     /**
-     * @param $sIdealoOrderNr
-     * @param $sShopOrderNr
+     * @param string $sIdealoOrderNr
+     * @param string $sShopOrderNr
      */
     protected function sendOrderNr($sIdealoOrderNr, $sShopOrderNr)
     {
@@ -454,8 +485,9 @@ class idealodk_order_import
     }
 
     /**
-     * @param $oClient
-     * @return string
+     * @param object $oClient
+     *
+     * @return string $sOutput Curl output
      */
     protected function getErrorOutput($oClient)
     {

@@ -71,13 +71,13 @@ class idealodk_orderstatus_export
     {
         global $db;
         $sQ = "SELECT 
-                xt_orders.orders_id AS orders_id,
-                xt_orders.orders_source_external_id AS idealo_id
-               FROM xt_orders
-               INNER JOIN xt_fcidealo_status 
-                ON xt_orders.orders_id = xt_fcidealo_status.orders_id
-               WHERE xt_orders.orders_status = 34
-                AND xt_fcidealo_status.date_sent_cancel IS NULL";
+                " . DB_PREFIX . "_orders.orders_id AS orders_id,
+                " . DB_PREFIX . "_orders.orders_source_external_id AS idealo_id
+               FROM " . DB_PREFIX . "_orders
+               INNER JOIN " . DB_PREFIX . "_fcidealo_status 
+                ON " . DB_PREFIX . "_orders.orders_id = " . DB_PREFIX . "_fcidealo_status.orders_id
+               WHERE " . DB_PREFIX . "_orders.orders_status = 34
+                AND " . DB_PREFIX . "_fcidealo_status.date_sent_cancel IS NULL";
         
         $aOrders = $db->GetArray($sQ);
         return $aOrders;
@@ -104,14 +104,14 @@ class idealodk_orderstatus_export
     {
         global $db;
         $sQ = "SELECT 
-                xt_orders.orders_id AS orders_id,
-                xt_orders.orders_source_external_id AS idealo_id
-               FROM xt_orders
-               INNER JOIN xt_fcidealo_status 
-                ON xt_orders.orders_id = xt_fcidealo_status.orders_id
-               WHERE xt_orders.orders_status = 33
-                AND xt_fcidealo_status.date_sent_shipping IS NULL
-                AND xt_fcidealo_status.date_sent_cancel IS NULL";
+                " . DB_PREFIX . "_orders.orders_id AS orders_id,
+                " . DB_PREFIX . "_orders.orders_source_external_id AS idealo_id
+               FROM " . DB_PREFIX . "_orders
+               INNER JOIN " . DB_PREFIX . "_fcidealo_status 
+                ON " . DB_PREFIX . "_orders.orders_id = " . DB_PREFIX . "_fcidealo_status.orders_id
+               WHERE " . DB_PREFIX . "_orders.orders_status = 33
+                AND " . DB_PREFIX . "_fcidealo_status.date_sent_shipping IS NULL
+                AND " . DB_PREFIX . "_fcidealo_status.date_sent_cancel IS NULL";
         
         $aOrders = $db->GetArray($sQ);
         return $aOrders;
@@ -121,20 +121,20 @@ class idealodk_orderstatus_export
     {
         global $db;
         $sQ = "SELECT 
-                xt_orders.orders_id AS orders_id,
-                xt_orders.orders_source_external_id AS idealo_id,
-                xt_tracking.tracking_code AS tracking_code,
-                xt_shipper.shipper_name AS shipper_name
-               FROM xt_orders
-               INNER JOIN xt_fcidealo_status 
-                ON xt_orders.orders_id = xt_fcidealo_status.orders_id
-               INNER JOIN xt_tracking
-                ON xt_orders.orders_id = xt_tracking.tracking_order_id
-               INNER JOIN xt_shipper
-                ON xt_tracking.tracking_shipper_id = xt_shipper.id
-               WHERE xt_orders.orders_status = 33
-                AND xt_fcidealo_status.date_sent_trackcode IS NULL
-                AND xt_fcidealo_status.date_sent_cancel IS NULL";
+                " . DB_PREFIX . "_orders.orders_id AS orders_id,
+                " . DB_PREFIX . "_orders.orders_source_external_id AS idealo_id,
+                " . DB_PREFIX . "_tracking.tracking_code AS tracking_code,
+                " . DB_PREFIX . "_shipper.shipper_name AS shipper_name
+               FROM " . DB_PREFIX . "_orders
+               INNER JOIN " . DB_PREFIX . "_fcidealo_status 
+                ON " . DB_PREFIX . "_orders.orders_id = " . DB_PREFIX . "_fcidealo_status.orders_id
+               INNER JOIN " . DB_PREFIX . "_tracking
+                ON " . DB_PREFIX . "_orders.orders_id = " . DB_PREFIX . "_tracking.tracking_order_id
+               INNER JOIN " . DB_PREFIX . "_shipper
+                ON " . DB_PREFIX . "_tracking.tracking_shipper_id = " . DB_PREFIX . "_shipper.id
+               WHERE " . DB_PREFIX . "_orders.orders_status = 33
+                AND " . DB_PREFIX . "_fcidealo_status.date_sent_trackcode IS NULL
+                AND " . DB_PREFIX . "_fcidealo_status.date_sent_cancel IS NULL";
         
         $aOrders = $db->GetArray($sQ);
         return $aOrders;
@@ -149,7 +149,7 @@ class idealodk_orderstatus_export
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' cancel-ERROR: ' . print_r($this->getErrorOutput($this->oIdealo), true));
         } else {
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' canceled, HTTP-Code: '.$this->oIdealo->getHttpStatus()." ".$sResponse);
-            $sQ = "UPDATE xt_fcidealo_status
+            $sQ = "UPDATE " . DB_PREFIX . "_fcidealo_status
                    SET date_sent_cancel = '" . date("Y-m-d H:i:s") . "'
                    WHERE orders_id = '" . $aOrder['orders_id'] . "'" ;
             $db->Execute($sQ);
@@ -165,7 +165,7 @@ class idealodk_orderstatus_export
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' ship-ERROR: ' . print_r($this->getErrorOutput($this->oIdealo), true));
         } else {
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' shipped, HTTP-Code: '.$this->oIdealo->getHttpStatus()." ".$sResponse);
-            $sQ = "UPDATE xt_fcidealo_status
+            $sQ = "UPDATE " . DB_PREFIX . "_fcidealo_status
                    SET date_sent_shipping = '" . date("Y-m-d H:i:s") . "'
                    WHERE orders_id = '" . $aOrder['orders_id'] . "'" ;
             $db->Execute($sQ);
@@ -186,7 +186,7 @@ class idealodk_orderstatus_export
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' Track-ERROR: ' . print_r($this->getErrorOutput($this->oIdealo), true));
         } else {
             idealodk_logger::log('IDEALODK-API: Order ' . $aOrder['idealo_id'] . ' tracked, HTTP-Code: '.$this->oIdealo->getHttpStatus()." ".$sResponse);
-            $sQ = "UPDATE xt_fcidealo_status
+            $sQ = "UPDATE " . DB_PREFIX . "_fcidealo_status
                    SET date_sent_trackcode = '" . date("Y-m-d H:i:s") . "'
                    WHERE orders_id = '" . $aOrder['orders_id'] . "'" ;
             $db->Execute($sQ);

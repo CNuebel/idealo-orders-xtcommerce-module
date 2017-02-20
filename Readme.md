@@ -4,8 +4,8 @@ The idealo Direktkauf XT-Commerce Plugin allows you to import your idealo-orders
 See description and installation video on youtube: https://youtu.be/8KSOgp2GmWg (in german language)
 
 ## Version
-1.0.5 
-January 25 2017
+1.0.6 
+February 2017
 
 ## Requirements
 * Installed and running XT-Commerce shop > 4.2 < 5.0
