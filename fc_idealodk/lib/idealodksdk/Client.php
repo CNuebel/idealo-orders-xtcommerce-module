@@ -52,13 +52,25 @@ class Client
     const URL_TYPE_SEND_FULFILLMENT = 'sendFulfillmentStatus';
     const URL_TYPE_SEND_REVOCATION = 'sendRevocationStatus';
 
+    /**
+     * Client constructor.
+     *
+     * @param string $sToken
+     * @param bool   $blLive
+     * @param string $sERPShopSystem
+     * @param string $sERPShopSystemVersion
+     * @param string $sIntegrationPartner
+     * @param string $sInterfaceVersion
+     * @param string $sAPITestUrl Optional alternative test API
+     */
     public function __construct(
         $sToken = null,
         $blLive = false,
         $sERPShopSystem = null,
         $sERPShopSystemVersion = null,
         $sIntegrationPartner = null,
-        $sInterfaceVersion = null
+        $sInterfaceVersion = null,
+        $sAPITestUrl = null
     ) {
         $this->setToken($sToken);
         $this->setIsLiveMode($blLive);
@@ -66,6 +78,7 @@ class Client
         $this->setERPShopSystemVersion($sERPShopSystemVersion);
         $this->setIntegrationPartner($sIntegrationPartner);
         $this->setInterfaceVersion($sInterfaceVersion);
+        $this->setAPITestUrl($sAPITestUrl);
     }
     
     public function setToken($sToken) 
@@ -116,6 +129,11 @@ class Client
     public function getCurlErrno() 
     {
         return $this->iCurlErrno;
+    }
+
+    public function setAPITestUrl($sAPITestUrl)
+    {
+        $this->sAPITestUrl  = $sAPITestUrl;
     }
 
     public function setERPShopSystem($sERPShopSystem)

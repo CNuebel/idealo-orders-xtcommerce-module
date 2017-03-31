@@ -74,6 +74,16 @@
             </en>
         </config>
         <config>
+            <key>FC_IDEALODK_APITESTURL</key>
+            <value></value>
+            <de>
+                <title>Alternative Test-API URL</title>
+            </de>
+            <en>
+                <title>Alternative Test-API URL</title>
+            </en>
+        </config>
+        <config>
             <key>FC_IDEALODK_APIKEY</key>
             <value></value>
             <de>

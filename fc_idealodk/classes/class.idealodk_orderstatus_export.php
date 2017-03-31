@@ -36,6 +36,9 @@ class idealodk_orderstatus_export
         $oIdealo->setToken(FC_IDEALODK_APIKEY);
         $blLiveMode = (FC_IDEALODK_MODE == 'live') ? true : false;
         $oIdealo->setIsLiveMode($blLiveMode);
+        if (FC_IDEALODK_APITESTURL != ""){
+            $oIdealo->setAPITestUrl(FC_IDEALODK_APITESTURL);
+        }
 
         $oIdealo->setERPShopSystem('XTC');
         $oIdealo->setERPShopSystemVersion(_SYSTEM_VERSION);
