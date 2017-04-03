@@ -27,9 +27,11 @@
 class idealodk_orderstatus_export
 {
     public $oIdealo = null;
+    public $xt_ship_and_track;
     
     public function __construct()
     {
+        global $db;
         require_once dirname(__FILE__) . '/../lib/idealodksdk/Client.php';
         
         $oIdealo = new idealo\Direktkauf\REST\Client();
@@ -47,6 +49,16 @@ class idealodk_orderstatus_export
         idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: XTC ' . _SYSTEM_VERSION . ' FATCHIP v' . $this->getPluginVersion());
 
         $this->oIdealo = $oIdealo;
+
+        $pSql = "SELECT * FROM " . DB_PREFIX . "_plugin_products WHERE code = 'xt_ship_and_track' LIMIT 1;";
+
+        $plugin = $db->GetArray($pSql);
+        if(empty($plugin) || $plugin['plugin_status'] == 0){
+            $this->xt_ship_and_track = false;
+            idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: xt_ship_and_track not installed/active');
+        }else{
+            $this->xt_ship_and_track = true;
+        }
     }
     
     public function run()
@@ -56,11 +68,12 @@ class idealodk_orderstatus_export
         foreach ($aOrders as $aOrder) {
             $this->markOrderAsShipped($aOrder);
         }
-        
-        $aTrackOrders = $this->getTrackableOrders();
-        idealodk_logger::log('IDEALODK-EXPORT: Found ' . count($aTrackOrders) . ' new tracked orders');
-        foreach ($aTrackOrders as $aOrder) {
-            $this->markOrderAsTracked($aOrder);
+        if ($this->xt_ship_and_track){
+            $aTrackOrders = $this->getTrackableOrders();
+            idealodk_logger::log('IDEALODK-EXPORT: Found ' . count($aTrackOrders) . ' new tracked orders');
+            foreach ($aTrackOrders as $aOrder) {
+                $this->markOrderAsTracked($aOrder);
+            }
         }
         
         $aCanceledOrders = $this->getCanceledOrders();
@@ -123,6 +136,7 @@ class idealodk_orderstatus_export
     protected function getTrackableOrders()
     {
         global $db;
+
         $sQ = "SELECT 
                 " . DB_PREFIX . "_orders.orders_id AS orders_id,
                 " . DB_PREFIX . "_orders.orders_source_external_id AS idealo_id,
