@@ -427,10 +427,11 @@ class idealodk_order_import
                 $oProduct->_setStatus($sId,1);
                 $nProduct = new product($sId);
                 $nProduct->_setStatus($sId,0);
+                idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: Product tmp activated ID '. $nProduct->data['products_id'] .'(SKU: '. $sSku . ')');
             }else{
                 $nProduct = false;
             }
-            idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: Product tmp activated ID '. $nProduct->data['products_id']);
+            
         } else {
             idealodk_logger::log('IDEALO ORDER IMPORT: ERROR: Product SKU ' . $sSku . ' not found');
         }
