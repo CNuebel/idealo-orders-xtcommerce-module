@@ -422,11 +422,23 @@ class idealodk_order_import
         $sId = $db->GetOne($sQ);
         if ($sId && $sId != ""){
             $oProduct = new product($sId);
-            idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: Product SKU ' . $sSku . '/ ID '. $sId .' loaded');
+            idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: Product SKU ' . $sSku . '/ ID '. ($oProduct->data['products_id'] ? $oProduct->data['products_id'].' (XTC pID) loaded' : ' no XTC pID product disabled!'));
+            if(empty($oProduct->data['products_id'])){
+                $oProduct->_setStatus($sId,1);
+                $nProduct = new product($sId);
+                $nProduct->_setStatus($sId,0);
+            }else{
+                $nProduct = false;
+            }
+            idealodk_logger::log('IDEALO ORDER IMPORT: NOTICE: Product tmp activated ID '. $nProduct->data['products_id']);
         } else {
             idealodk_logger::log('IDEALO ORDER IMPORT: ERROR: Product SKU ' . $sSku . ' not found');
         }
-        return $oProduct;
+        if ($nProduct){
+            return $nProduct;
+        }else{
+            return $oProduct;
+        }
     }
 
     /**
